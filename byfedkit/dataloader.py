@@ -92,7 +92,6 @@ def _iid_index(client_num, dataset):
     get training index and test index under IID setting, where all clients get index containing all labels
 
     :param client_num: client num
-    :param class_num: how many classes the dataset contains
     :param dataset: dataset dict, consist of train & test
     :return: training index & test index
     """
@@ -110,6 +109,80 @@ def _iid_index(client_num, dataset):
     class_num = len(index_dict_train.keys())
 
     select_list = np.arange(client_num * class_num)
+
+    finals_train = [[] for _ in range(client_num)]
+    finals_test = [[] for _ in range(client_num)]
+
+    for ind, s in enumerate(select_list):
+        client_id = ind % client_num
+        finals_train[client_id].extend(shards_train[s])
+        finals_test[client_id].extend(shards_test[s])
+
+    return finals_train, finals_test
+
+
+def _dirichlet_index(client_num, dataset, alpha):
+    """
+    get training index and test index under Dirichlet setting, following Dir(alpha)
+
+    :param client_num:
+    :param dataset: dataset dict, consist of train & test
+    :param alpha: concentration variable in Dirichlet setting
+    :return: training index & test index
+    """
+    dataset_train = dataset['train']
+    dataset_test = dataset['test']
+
+    index_dict_train = _index_dict(dataset_train)
+    index_dict_test = _index_dict(dataset_test)
+
+    class_num = len(index_dict_train.keys())
+
+    dirichlet_pdf = np.random.dirichlet([alpha / class_num] * class_num, client_num)
+
+    shard_num_train = len(dataset_train) // client_num
+    shard_num_test = len(dataset_test) // client_num
+
+    # === training dataset ===
+    index_train_final = []
+    for i in np.arange(client_num):
+        _index_train = []
+        local_dirichlet_pdf = dirichlet_pdf[i]
+        local_pdf = np.floor(local_dirichlet_pdf * shard_num_train)
+        for k in sorted(index_dict_train.keys()):
+            index_k = np.array(index_dict_train[k])
+            np.random.shuffle(index_k)
+            _index_train.extend(index_k[:int(local_pdf[k])])
+        index_train_final.append(_index_train)
+    # === test dataset ===
+    index_test_final = []
+    for i in np.arange(client_num):
+        _index_test = []
+        local_dirichlet_pdf = dirichlet_pdf[i]
+        local_pdf = np.floor(local_dirichlet_pdf * shard_num_test)
+        for k in sorted(index_dict_test.keys()):
+            index_k = np.array(index_dict_test[k])
+            np.random.shuffle(index_k)
+            _index_test.extend(index_k[:int(local_pdf[k])])
+        index_test_final.append(_index_test)
+    return index_train_final, index_test_final
+
+
+def _imbalance_class_index(client_num, dataset, class_per_client):
+    dataset_train = dataset['train']
+    dataset_test = dataset['test']
+
+    index_dict_train = _index_dict(dataset_train)
+    index_dict_test = _index_dict(dataset_test)
+
+    class_num = len(index_dict_train.keys())
+    shard_num = class_per_client * client_num // class_num
+
+    shards_train = _index2shards(index_dict=index_dict_train, shard_num=shard_num)
+    shards_test = _index2shards(index_dict=index_dict_test, shard_num=shard_num)
+
+    select_list = np.arange(client_num*class_per_client)
+    np.random.shuffle(select_list)
 
     finals_train = [[] for _ in range(client_num)]
     finals_test = [[] for _ in range(client_num)]
@@ -148,43 +221,20 @@ def load_cifar10_iid(client_num):
     return dataset['train'], dataset['test'], index_train, index_test
 
 
-def load_cifar10_full_dirichlet(client_num, class_num, alpha=0.1):
+def load_cifar10_dirichlet(client_num, alpha=0.1):
     dataset = _dataset(CIFAR10)
+    index_train, index_test = _dirichlet_index(client_num=client_num,
+                                               dataset=dataset,
+                                               alpha=alpha)
+    return dataset['train'], dataset['test'], index_train, index_test
 
-    dataset_train = dataset['train']
-    dataset_test = dataset['test']
 
-    dirichlet_pdf = np.random.dirichlet([alpha / class_num] * class_num, client_num)
-
-    index_dict_train = _index_dict(dataset_train)
-    index_dict_test = _index_dict(dataset_test)
-
-    shard_num_train = len(dataset_train) // client_num
-    shard_num_test = len(dataset_test) // client_num
-
-    # === training dataset ===
-    index_train_final = []
-    for i in np.arange(client_num):
-        _index_train = []
-        local_dirichlet_pdf = dirichlet_pdf[i]
-        local_pdf = np.floor(local_dirichlet_pdf * shard_num_train)
-        for k in sorted(index_dict_train.keys()):
-            index_k = np.array(index_dict_train[k])
-            np.random.shuffle(index_k)
-            _index_train.extend(index_k[:int(local_pdf[k])])
-        index_train_final.append(_index_train)
-    # === test dataset ===
-    index_test_final = []
-    for i in np.arange(client_num):
-        _index_test = []
-        local_dirichlet_pdf = dirichlet_pdf[i]
-        local_pdf = np.floor(local_dirichlet_pdf * shard_num_test)
-        for k in sorted(index_dict_test.keys()):
-            index_k = np.array(index_dict_test[k])
-            np.random.shuffle(index_k)
-            _index_test.extend(index_k[:int(local_pdf[k])])
-        index_test_final.append(_index_test)
-    return dataset_train, dataset_test, index_train_final, index_test_final
+def load_cifar10_class_imbalance(client_num, class_per_client):
+    dataset = _dataset(CIFAR10)
+    index_train, index_test = _imbalance_class_index(client_num=client_num,
+                                                     dataset=dataset,
+                                                     class_per_client=class_per_client)
+    return dataset['train'], dataset['test'], index_train, index_test
 
 
 def load_mnist_index(client_num, class_per_client, class_num):
@@ -225,9 +275,9 @@ def load_mnist_index(client_num, class_per_client, class_num):
     labels = np.arange(class_num)
     select_list = []
     for c_id in np.arange(client_num):
-        select_list.extend(labels * class_num + c_id)
+        select_list.extend(labels*class_num+c_id)
     print(select_list)
-    select_list = np.arange(client_num * class_num)
+    select_list = np.arange(client_num*class_num)
     # for label in labels:
     #     select_list.append()
     # print(select_list)
@@ -249,4 +299,4 @@ def load_mnist_index(client_num, class_per_client, class_num):
 
 
 if __name__ == '__main__':
-    load_cifar10_full_dirichlet(10, 10, 0.1)
+    _imbalance_class_index(10, )

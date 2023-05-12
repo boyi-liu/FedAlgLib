@@ -24,7 +24,7 @@ def args_parser():
     parser.add_argument('--lr', type=float, default=0.01, help="learning rate")
 
     # ===== Non-IID Setting =====
-    parser.add_argument('--partition', type=str, default='iid', help="how to partition the dataset")  # iid/label-dir/label-class
+    parser.add_argument('--partition', type=str, default='iid', help="how to partition the dataset")  # iid/dir/class
     parser.add_argument('--dir_alpha', type=float, default=0.1, help="alpha in dirichlet distribution")
     parser.add_argument('--class_per_client', type=int, default=6, help="class_per_client")
 
