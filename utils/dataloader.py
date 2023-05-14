@@ -7,7 +7,7 @@ def load_data(args):
     elif args.partition == 'class':
         return load_data_label_class(args)
     elif args.partition == 'dir':
-        return
+        return load_data_label_dirichlet(args)
     else:
         exit('Error: unrecognized data partition method')
 
