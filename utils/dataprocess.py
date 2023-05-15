@@ -21,3 +21,6 @@ class Processor:
             return self.data[-1]
         except:
             return None
+
+    def clear(self):
+        self.data = []

@@ -19,7 +19,7 @@ class Client(BaseClient):
                 batch_loss.append(loss.item())
 
         # === test ===
-        self.meters['acc'].append(self.local_test())
+        # self.meters['acc'].append(self.local_test())
         self.meters['loss'].append(sum(batch_loss)/len(batch_loss))
 
 

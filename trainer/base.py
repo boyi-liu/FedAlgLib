@@ -81,12 +81,16 @@ class BaseServer(BaseClient):
     def test_all(self):
         for client in self.clients:
             if client in self.sampled_clients:
-                self.meters['acc'].append(client.meters['acc'].last())
                 self.meters['loss'].append(client.meters['loss'].last())
-            else:
-                self.meters['acc'].append(client.local_test())
-        return self.meters['acc'].avg(), self.meters['loss'].avg()
+
+            client.clone_model(self)
+            self.meters['acc'].append(client.local_test())
+        acc = self.meters['acc'].avg()
+        loss = self.meters['loss'].avg()
+        self.meters['acc'].clear()
+        self.meters['loss'].clear()
+        return acc, loss
 
     def sample(self):
-        sample_num = self.sample_rate * self.client_num
+        sample_num = int(self.sample_rate * self.client_num)
         self.sampled_clients = random.sample(self.clients, sample_num)

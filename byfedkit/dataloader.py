@@ -118,7 +118,10 @@ def _iid_index(client_num, dataset):
         finals_train[client_id].extend(shards_train[s])
         finals_test[client_id].extend(shards_test[s])
 
-    return finals_train, finals_test
+    return {
+        'train': finals_train,
+        'test': finals_test
+    }
 
 
 def _dirichlet_index(client_num, dataset, alpha):
@@ -165,7 +168,11 @@ def _dirichlet_index(client_num, dataset, alpha):
             np.random.shuffle(index_k)
             _index_test.extend(index_k[:int(local_pdf[k])])
         index_test_final.append(_index_test)
-    return index_train_final, index_test_final
+
+    return {
+        'train': index_train_final,
+        'test': index_test_final
+    }
 
 
 def _imbalance_class_index(client_num, dataset, class_per_client):
@@ -192,7 +199,10 @@ def _imbalance_class_index(client_num, dataset, class_per_client):
         finals_train[client_id].extend(shards_train[s])
         finals_test[client_id].extend(shards_test[s])
 
-    return finals_train, finals_test
+    return {
+        'train': finals_train,
+        'test': finals_test
+    }
 
 
 def load_mnist_index_iid(client_num):
@@ -203,9 +213,7 @@ def load_mnist_index_iid(client_num):
 
 def load_mnist_iid(client_num):
     dataset = _dataset(MNIST)
-    index_train, index_test = _iid_index(client_num=client_num,
-                                         dataset=dataset)
-    return dataset['train'], dataset['test'], index_train, index_test
+    return dataset, _iid_index(client_num=client_num, dataset=dataset)
 
 
 def load_cifar_index_iid(client_num):
@@ -216,25 +224,17 @@ def load_cifar_index_iid(client_num):
 
 def load_cifar10_iid(client_num):
     dataset = _dataset(CIFAR10)
-    index_train, index_test = _iid_index(client_num=client_num,
-                                         dataset=dataset)
-    return dataset['train'], dataset['test'], index_train, index_test
+    return dataset, _iid_index(client_num=client_num, dataset=dataset)
 
 
 def load_cifar10_dirichlet(client_num, alpha=0.1):
     dataset = _dataset(CIFAR10)
-    index_train, index_test = _dirichlet_index(client_num=client_num,
-                                               dataset=dataset,
-                                               alpha=alpha)
-    return dataset['train'], dataset['test'], index_train, index_test
+    return dataset, _dirichlet_index(client_num=client_num, dataset=dataset, alpha=alpha)
 
 
-def load_cifar10_class_imbalance(client_num, class_per_client):
+def load_cifar10_class_imbalance(client_num, class_num):
     dataset = _dataset(CIFAR10)
-    index_train, index_test = _imbalance_class_index(client_num=client_num,
-                                                     dataset=dataset,
-                                                     class_per_client=class_per_client)
-    return dataset['train'], dataset['test'], index_train, index_test
+    return dataset, _imbalance_class_index(client_num=client_num, dataset=dataset, class_per_client=class_num)
 
 
 def load_mnist_index(client_num, class_per_client, class_num):

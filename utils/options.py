@@ -4,8 +4,8 @@ import argparse
 def args_parser():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--total_num', type=int, default=10, help="total clients num")
-    parser.add_argument('--selected_rate', type=float, default=0.6, help="selected clients rate")
+    parser.add_argument('--total_num', type=int, default=5, help="total clients num")
+    parser.add_argument('--sample_rate', type=float, default=0.3, help="selected clients rate")
     parser.add_argument('--suffix', type=str, default='')
 
     # ===== Hardware Setting =====
@@ -18,7 +18,7 @@ def args_parser():
     parser.add_argument('--model', type=str, default='mlp', help="model for training")
 
     # ===== Training Setting =====
-    parser.add_argument('--comm_round', type=int, default=1, help="communication round num")
+    parser.add_argument('--comm_round', type=int, default=10, help="communication round num")
     parser.add_argument('--local_batch_size', type=int, default=10, help="local batch size")
     parser.add_argument('--local_epochs', type=int, default=3, help="local epoch num")
     parser.add_argument('--lr', type=float, default=0.01, help="learning rate")
