@@ -4,7 +4,43 @@ import torch.nn.functional as F
 from torchvision import models
 
 
-class CNNCifar(nn.Module):
+class BaseModule(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def parameters_to_tensor(self):
+        """
+            collect each param, then flatten them all
+
+        :return: a list of flatten param
+        """
+        params = []
+        for param in self.parameters():
+            params.append(param.view(-1))
+        params = torch.cat(params, 0)
+        return params
+
+    def tensor_to_parameters(self, tensor):
+        """
+            put a list of flatten param into a model
+
+        :param tensor: the tensor to stored in parameters
+        :return: None
+        """
+        param_index = 0
+        for param in self.parameters():
+            # === get shape & total size ===
+            shape = param.shape
+            param_size = 1
+            for s in shape:
+                param_size *= s
+
+            # === put value into param ===
+            param.data = tensor[param_index: param_index+param_size].view(shape).detach().clone()
+            param_index += param_size
+
+
+class CNNCifar(BaseModule):
     def __init__(self, args, dim_out):
         super(CNNCifar, self).__init__()
         self.args = args
@@ -37,7 +73,7 @@ class CNNCifar(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
-class MLP(nn.Module):
+class MLP(BaseModule):
     def __init__(self, args, dim_in, dim_hidden, dim_out):
         super(MLP, self).__init__()
         self.args = args
