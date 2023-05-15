@@ -14,6 +14,7 @@ class Sync:
         # === save config ===
         self.args = args
 
+
         # === load trainer ===
         trainer_module = importlib.import_module(f'src.trainer.{args.alg}')
 
